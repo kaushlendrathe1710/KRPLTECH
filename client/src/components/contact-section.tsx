@@ -4,9 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mail, MapPin, Clock, Send, CheckCircle } from "lucide-react";
+import { Mail, MapPin, Clock, Send, CheckCircle, Loader2 } from "lucide-react";
 import { SiLinkedin, SiGithub, SiX } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 const contactInfo = [
   {
@@ -51,24 +53,40 @@ const socialLinks = [
 ];
 
 export function ContactSection() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
+  const submitMutation = useMutation({
+    mutationFn: async (data: { name: string; email: string; subject: string; message: string }) => {
+      await apiRequest("POST", "/api/contact", data);
+    },
+    onSuccess: () => {
+      setIsSubmitted(true);
+      toast({
+        title: "Message sent!",
+        description: "We'll get back to you as soon as possible.",
+      });
+      setTimeout(() => setIsSubmitted(false), 5000);
+    },
+    onError: () => {
+      toast({
+        title: "Failed to send",
+        description: "Please try again or contact us directly via email.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast({
-      title: "Message sent!",
-      description: "We'll get back to you as soon as possible.",
+    const formData = new FormData(e.currentTarget);
+    submitMutation.mutate({
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      subject: formData.get("subject") as string,
+      message: formData.get("message") as string,
     });
-    
-    setTimeout(() => setIsSubmitted(false), 5000);
+    e.currentTarget.reset();
   };
 
   return (
@@ -102,7 +120,8 @@ export function ContactSection() {
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
                       <Input 
-                        id="name" 
+                        id="name"
+                        name="name"
                         placeholder="Your name" 
                         required 
                         data-testid="input-name"
@@ -111,7 +130,8 @@ export function ContactSection() {
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
                       <Input 
-                        id="email" 
+                        id="email"
+                        name="email"
                         type="email" 
                         placeholder="your@email.com" 
                         required 
@@ -123,7 +143,8 @@ export function ContactSection() {
                   <div className="space-y-2">
                     <Label htmlFor="subject">Subject</Label>
                     <Input 
-                      id="subject" 
+                      id="subject"
+                      name="subject"
                       placeholder="What's this about?" 
                       required 
                       data-testid="input-subject"
@@ -133,7 +154,8 @@ export function ContactSection() {
                   <div className="space-y-2">
                     <Label htmlFor="message">Message</Label>
                     <Textarea 
-                      id="message" 
+                      id="message"
+                      name="message"
                       placeholder="Tell us about your project..." 
                       rows={5}
                       required 
@@ -144,11 +166,14 @@ export function ContactSection() {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isSubmitting}
+                    disabled={submitMutation.isPending}
                     data-testid="button-submit-contact"
                   >
-                    {isSubmitting ? (
-                      "Sending..."
+                    {submitMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
                     ) : (
                       <>
                         <Send className="mr-2 h-4 w-4" />
