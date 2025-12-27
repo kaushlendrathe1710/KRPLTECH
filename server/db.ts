@@ -13,8 +13,14 @@ if (!databaseUrl) {
   );
 }
 
+// Configure SSL for Neon and other cloud databases
+const isNeonDb = databaseUrl.includes('neon.tech');
+const sslConfig = isNeonDb || databaseUrl.includes('sslmode=require') 
+  ? { rejectUnauthorized: false } 
+  : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined);
+
 export const pool = new Pool({ 
   connectionString: databaseUrl,
-  ssl: databaseUrl.includes('neon.tech') ? { rejectUnauthorized: false } : undefined
+  ssl: sslConfig,
 });
 export const db = drizzle(pool, { schema });
