@@ -32,7 +32,7 @@ import { Link } from "wouter";
 import { 
   LayoutDashboard, MessageSquare, Users, FolderKanban, Briefcase,
   Settings, ArrowLeft, LogOut, Check, Eye, Plus, Pencil, Trash2,
-  UserCog, Shield, TrendingUp, Mail, Calendar, Clock, CheckCircle
+  UserCog, Shield, TrendingUp, Mail, Calendar, Clock, CheckCircle, Search
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { ContactMessage, ProjectRequest, User, Project, PROJECT_CATEGORIES } from "@shared/schema";
@@ -45,6 +45,7 @@ export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState<Section>("overview");
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [projectSearch, setProjectSearch] = useState("");
 
   const { data: stats } = useQuery<{
     totalMessages: number;
@@ -668,18 +669,32 @@ export default function AdminDashboard() {
 
             {activeSection === "portfolio" && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-2xl font-bold">Portfolio Management</h1>
-                  <Dialog open={projectDialogOpen} onOpenChange={(open) => {
-                    setProjectDialogOpen(open);
-                    if (!open) setEditingProject(null);
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button data-testid="button-add-project">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Project
-                      </Button>
-                    </DialogTrigger>
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h1 className="text-2xl font-bold">Portfolio Management</h1>
+                    <p className="text-sm text-muted-foreground">{projects.length} total projects</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search projects..."
+                        value={projectSearch}
+                        onChange={(e) => setProjectSearch(e.target.value)}
+                        className="pl-9 w-64"
+                        data-testid="input-search-projects"
+                      />
+                    </div>
+                    <Dialog open={projectDialogOpen} onOpenChange={(open) => {
+                      setProjectDialogOpen(open);
+                      if (!open) setEditingProject(null);
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button data-testid="button-add-project">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Project
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>{editingProject ? "Edit Project" : "Add New Project"}</DialogTitle>
@@ -696,12 +711,24 @@ export default function AdminDashboard() {
                         isLoading={createProjectMutation.isPending || updateProjectMutation.isPending}
                       />
                     </DialogContent>
-                  </Dialog>
+                    </Dialog>
+                  </div>
                 </div>
 
                 <ScrollArea className="h-[calc(100vh-200px)]">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {projects.map((project) => (
+                    {projects
+                      .filter((project) => {
+                        if (!projectSearch.trim()) return true;
+                        const search = projectSearch.toLowerCase();
+                        return (
+                          project.title.toLowerCase().includes(search) ||
+                          project.description.toLowerCase().includes(search) ||
+                          project.category.toLowerCase().includes(search) ||
+                          project.technologies?.some(t => t.toLowerCase().includes(search))
+                        );
+                      })
+                      .map((project) => (
                       <Card key={project.id} className="overflow-hidden" data-testid={`project-${project.id}`}>
                         <div className="aspect-video relative overflow-hidden">
                           <img
