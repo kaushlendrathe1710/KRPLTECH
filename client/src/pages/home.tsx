@@ -2,7 +2,6 @@ import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { HeroSection } from "@/components/hero-section";
-import { FilterBar } from "@/components/filter-bar";
 import { ProjectGrid } from "@/components/project-grid";
 import { ProjectModal } from "@/components/project-modal";
 import { StatsSection } from "@/components/stats-section";
@@ -59,7 +58,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onAboutClick={handleAboutClick} onContactClick={handleContactClick} />
+      <Header 
+        onAboutClick={handleAboutClick} 
+        onContactClick={handleContactClick}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
       
       <main>
         <HeroSection 
@@ -73,22 +79,21 @@ export default function Home() {
           className="py-16 md:py-24"
         >
           <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-8 text-center">
+            <div className="mb-10 text-center">
               <h2 className="text-3xl font-bold md:text-4xl" data-testid="text-projects-title">
-                My Projects
+                Our Projects
               </h2>
-              <p className="mt-2 text-muted-foreground">
-                A collection of work I'm proud of
+              <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
+                Explore our portfolio of web applications, mobile apps, and digital solutions 
+                built with modern technologies
               </p>
-            </div>
-            
-            <div className="mb-8">
-              <FilterBar
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-              />
+              {(selectedCategory !== "All" || searchQuery) && (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Showing {filteredProjects.length} of {projects.length} projects
+                  {selectedCategory !== "All" && ` in ${selectedCategory}`}
+                  {searchQuery && ` matching "${searchQuery}"`}
+                </p>
+              )}
             </div>
             
             <ProjectGrid
