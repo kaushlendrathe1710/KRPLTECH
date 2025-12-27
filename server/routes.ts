@@ -260,6 +260,61 @@ export async function registerRoutes(
     }
   });
 
+  // Get all users (admin only)
+  app.get("/api/admin/users", requireAdmin, async (_req, res) => {
+    try {
+      const [clients, admins] = await Promise.all([
+        storage.getAllClients(),
+        storage.getAllAdmins(),
+      ]);
+      res.json([...admins, ...clients]);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Update user (admin only) - for role changes
+  app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { role, name, mobile } = req.body;
+      
+      // Check if target user is protected
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      if (targetUser.isProtected && role !== targetUser.role) {
+        return res.status(403).json({ error: "Cannot modify superadmin role" });
+      }
+      
+      const updates: Record<string, any> = {};
+      if (role) updates.role = role;
+      if (name !== undefined) updates.name = name;
+      if (mobile !== undefined) updates.mobile = mobile;
+      
+      const user = await storage.updateUser(req.params.id, updates);
+      res.json(user);
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  // Delete user (admin only)
+  app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteUser(req.params.id);
+      if (!deleted) {
+        return res.status(403).json({ error: "Cannot delete this user" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
   // Get all project requests
   app.get("/api/admin/requests", requireAdmin, async (_req, res) => {
     try {
