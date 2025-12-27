@@ -108,22 +108,24 @@ export async function registerRoutes(
 
       const { email, code, name, mobile } = result.data;
       
-      // Validate OTP
+      // Validate OTP first
       const token = await storage.getValidOTP(email, code);
       if (!token) {
         return res.status(400).json({ error: "Invalid or expired code" });
       }
-      
-      await storage.markOTPUsed(token.id);
 
-      // Get or create user
+      // Check if user exists
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
-        // New user - require name and mobile
+        // New user - require name for registration
+        // Don't consume OTP yet if we need registration info
         if (!name) {
           return res.status(400).json({ error: "Name is required for new users", requiresRegistration: true });
         }
+        
+        // Now consume the OTP since we have all needed info
+        await storage.markOTPUsed(token.id);
         
         // Check if this is the superadmin email
         const role = email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase() ? "admin" : "client";
@@ -136,6 +138,9 @@ export async function registerRoutes(
           role,
           isProtected,
         });
+      } else {
+        // Existing user - consume the OTP
+        await storage.markOTPUsed(token.id);
       }
 
       // Set session
