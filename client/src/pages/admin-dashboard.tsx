@@ -56,18 +56,26 @@ export default function AdminDashboard() {
     totalProjects: number;
   }>({
     queryKey: ["/api/admin/stats"],
+    refetchInterval: 5000,
+    staleTime: 0,
   });
 
   const { data: messages = [] } = useQuery<ContactMessage[]>({
     queryKey: ["/api/admin/messages"],
+    refetchInterval: 5000,
+    staleTime: 0,
   });
 
   const { data: allUsers = [] } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
+    refetchInterval: 10000,
+    staleTime: 0,
   });
 
   const { data: requests = [] } = useQuery<ProjectRequest[]>({
     queryKey: ["/api/admin/requests"],
+    refetchInterval: 5000,
+    staleTime: 0,
   });
 
   const { data: projects = [] } = useQuery<Project[]>({
