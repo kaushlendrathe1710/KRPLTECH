@@ -36,8 +36,9 @@ export const generateOTP = (): string => {
 export const sendOTPEmail = async (email: string, otp: string): Promise<boolean> => {
   const transport = getTransporter();
   
+  // Use SMTP_USER as sender if SMTP_FROM not specified (avoids sender rejection)
   const mailOptions = {
-    from: process.env.SMTP_FROM || "noreply@krpl.tech",
+    from: process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@krpl.tech",
     to: email,
     subject: "Your Login Code - krpl.tech",
     html: `
@@ -75,8 +76,9 @@ export const sendOTPEmail = async (email: string, otp: string): Promise<boolean>
 export const sendContactConfirmation = async (email: string, name: string): Promise<boolean> => {
   const transport = getTransporter();
   
+  // Use SMTP_USER as sender if SMTP_FROM not specified (avoids sender rejection)
   const mailOptions = {
-    from: process.env.SMTP_FROM || "noreply@krpl.tech",
+    from: process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@krpl.tech",
     to: email,
     subject: "We received your message - krpl.tech",
     html: `
