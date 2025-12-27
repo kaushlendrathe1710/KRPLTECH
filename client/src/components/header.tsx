@@ -13,7 +13,7 @@ export function Header({ onAboutClick, onContactClick }: HeaderProps) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
         <a href="/" className="flex items-center gap-2" data-testid="link-logo">
           <Code2 className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">Portfolio</span>
+          <span className="font-bold text-lg">krpl.tech</span>
         </a>
         
         <nav className="hidden items-center gap-1 md:flex">

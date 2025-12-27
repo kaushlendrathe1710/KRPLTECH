@@ -11,10 +11,10 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2">
               <Code2 className="h-5 w-5 text-primary" />
-              <span className="font-bold">Portfolio</span>
+              <span className="font-bold">krpl.tech</span>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              Building digital experiences with passion and precision.
+              Building digital solutions with expertise and innovation.
             </p>
           </div>
           
@@ -43,7 +43,7 @@ export function Footer() {
             <h4 className="font-medium">Connect</h4>
             <div className="mt-2 flex gap-3">
               <a
-                href="https://github.com"
+                href="https://github.com/krpl-tech"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -52,7 +52,7 @@ export function Footer() {
                 <SiGithub className="h-5 w-5" />
               </a>
               <a
-                href="https://linkedin.com"
+                href="https://linkedin.com/company/krpl-tech"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -61,7 +61,7 @@ export function Footer() {
                 <SiLinkedin className="h-5 w-5" />
               </a>
               <a
-                href="https://twitter.com"
+                href="https://twitter.com/krpltech"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -74,7 +74,7 @@ export function Footer() {
         </div>
         
         <div className="mt-8 border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; {currentYear} Portfolio. Built with React & Tailwind CSS.</p>
+          <p>&copy; {currentYear} krpl.tech. All rights reserved.</p>
         </div>
       </div>
     </footer>
