@@ -12,8 +12,8 @@ const contactInfo = [
   {
     icon: Mail,
     label: "Email",
-    value: "contact@krpl.tech",
-    href: "mailto:contact@krpl.tech",
+    value: "admin@mymegaminds.com",
+    href: "mailto:admin@mymegaminds.com",
   },
   {
     icon: MapPin,
