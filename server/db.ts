@@ -4,8 +4,8 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-// Use NEON_DATABASE_URL if available, otherwise fall back to DATABASE_URL
-const databaseUrl = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+// Use DATABASE_URL first, fall back to NEON_DATABASE_URL
+const databaseUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
