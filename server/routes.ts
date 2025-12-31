@@ -86,7 +86,9 @@ export async function registerRoutes(
       const otp = generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      await storage.createOTP({ email, code: otp, expiresAt, used: false });
+      console.log(`[OTP] Creating OTP for ${email}: ${otp}, expires: ${expiresAt.toISOString()}`);
+      const createdToken = await storage.createOTP({ email, code: otp, expiresAt, used: false });
+      console.log(`[OTP] Created token ID: ${createdToken.id}`);
       await sendOTPEmail(email, otp);
 
       // Check if user exists to inform frontend
@@ -120,10 +122,13 @@ export async function registerRoutes(
       const { email, code, name, mobile } = result.data;
       
       // Validate OTP first
+      console.log(`[OTP] Verifying code for ${email}: ${code}`);
       const token = await storage.getValidOTP(email, code);
       if (!token) {
+        console.log(`[OTP] Validation failed for ${email} - no valid token found`);
         return res.status(400).json({ error: "Invalid or expired code" });
       }
+      console.log(`[OTP] Token found for ${email}, expires at: ${token.expiresAt}`);
 
       // Check if user exists
       let user = await storage.getUserByEmail(email);
