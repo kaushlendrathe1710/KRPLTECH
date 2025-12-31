@@ -39,13 +39,19 @@ export async function registerRoutes(
     app.set("trust proxy", 1);
   }
   
+  // Get database URL with fallback and cleanup (same logic as db.ts)
+  let sessionDbUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+  if (sessionDbUrl) {
+    sessionDbUrl = sessionDbUrl.replace(/[&?]channel_binding=require/g, '');
+  }
+  
   // Setup session with PostgreSQL store
   const PgSession = connectPgSimple(session);
   
   app.use(
     session({
       store: new PgSession({
-        conString: process.env.DATABASE_URL,
+        conString: sessionDbUrl,
         tableName: "session",
         createTableIfMissing: true,
       }),
