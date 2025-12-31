@@ -158,14 +158,22 @@ export async function registerRoutes(
       req.session.userId = user.id;
       req.session.userRole = user.role;
 
-      res.json({ 
-        success: true, 
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
+      // Explicitly save session before responding to avoid race condition
+      req.session.save((err) => {
+        if (err) {
+          console.error("Failed to save session:", err);
+          return res.status(500).json({ error: "Failed to create session" });
         }
+        
+        res.json({ 
+          success: true, 
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+        });
       });
     } catch (error) {
       console.error("Failed to verify OTP:", error);
