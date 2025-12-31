@@ -68,7 +68,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
       if (data.user.role === "admin") {
         setLocation("/admin");
       } else {
-        setLocation("/client");
+        setLocation("/dashboard");
       }
     },
     onError: () => {
