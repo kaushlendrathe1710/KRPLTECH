@@ -63,13 +63,13 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
         title: "Welcome!",
         description: `Logged in as ${data.user.name || data.user.email}`,
       });
+      // Redirect to appropriate dashboard based on role BEFORE closing modal
+      const targetPath = data.user.role === "admin" ? "/admin" : "/dashboard";
       resetAndClose();
-      // Redirect to appropriate dashboard based on role
-      if (data.user.role === "admin") {
-        setLocation("/admin");
-      } else {
-        setLocation("/dashboard");
-      }
+      // Use setTimeout to ensure navigation happens after modal closes
+      setTimeout(() => {
+        setLocation(targetPath);
+      }, 100);
     },
     onError: () => {
       toast({
