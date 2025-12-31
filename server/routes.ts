@@ -34,6 +34,11 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Trust proxy for production (Railway, Heroku, etc.)
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+  
   // Setup session with PostgreSQL store
   const PgSession = connectPgSimple(session);
   
