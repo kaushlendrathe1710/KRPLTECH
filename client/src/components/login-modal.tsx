@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ interface LoginModalProps {
 type Step = "email" | "otp" | "register";
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
+  const [, setLocation] = useLocation();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -62,6 +64,12 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
         description: `Logged in as ${data.user.name || data.user.email}`,
       });
       resetAndClose();
+      // Redirect to appropriate dashboard based on role
+      if (data.user.role === "admin") {
+        setLocation("/admin");
+      } else {
+        setLocation("/client");
+      }
     },
     onError: () => {
       toast({
