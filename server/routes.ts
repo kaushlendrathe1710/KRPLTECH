@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import { Pool } from "pg";
 import { storage } from "./storage";
 import { insertProjectSchema, insertContactMessageSchema, insertProjectRequestSchema, SUPERADMIN_EMAIL } from "@shared/schema";
 import { generateOTP, sendOTPEmail, sendContactConfirmation } from "./email";
@@ -48,12 +49,33 @@ export async function registerRoutes(
   // Setup session with PostgreSQL store
   const PgSession = connectPgSimple(session);
   
+  // Create session table manually to avoid file not found error in production
+  if (sessionDbUrl) {
+    const pool = new Pool({ connectionString: sessionDbUrl });
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "session" (
+          "sid" varchar NOT NULL COLLATE "default",
+          "sess" json NOT NULL,
+          "expire" timestamp(6) NOT NULL,
+          CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+        );
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`);
+      console.log("[Session] Session table ensured");
+    } catch (err) {
+      console.error("[Session] Failed to create session table:", err);
+    } finally {
+      await pool.end();
+    }
+  }
+  
   app.use(
     session({
       store: new PgSession({
         conString: sessionDbUrl,
         tableName: "session",
-        createTableIfMissing: true,
+        createTableIfMissing: false, // Already created above
       }),
       secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
       resave: false,
