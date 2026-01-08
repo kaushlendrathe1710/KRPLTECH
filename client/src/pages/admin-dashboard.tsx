@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useUpload } from "@/hooks/use-upload";
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +33,7 @@ import { Link } from "wouter";
 import { 
   LayoutDashboard, MessageSquare, Users, FolderKanban, Briefcase,
   Settings, ArrowLeft, LogOut, Check, Eye, Plus, Pencil, Trash2,
-  UserCog, Shield, TrendingUp, Mail, Calendar, Clock, CheckCircle, Search
+  UserCog, Shield, TrendingUp, Mail, Calendar, Clock, CheckCircle, Search, Upload, X
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { ContactMessage, ProjectRequest, User, Project, PROJECT_CATEGORIES } from "@shared/schema";
@@ -873,6 +874,24 @@ function ProjectForm({
     year: project?.year || new Date().getFullYear(),
     featured: project?.featured || 0,
   });
+  const [imagePreview, setImagePreview] = useState<string | null>(project?.imageUrl || null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, isUploading, progress } = useUpload({
+    onSuccess: (response) => {
+      const imageUrl = response.objectPath;
+      setFormData(prev => ({ ...prev, imageUrl }));
+      setImagePreview(imageUrl);
+    },
+  });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const localPreview = URL.createObjectURL(file);
+      setImagePreview(localPreview);
+      await uploadFile(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -947,14 +966,68 @@ function ProjectForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="imageUrl">Image URL *</Label>
-        <Input
-          id="imageUrl"
-          value={formData.imageUrl}
-          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-          required
-          data-testid="input-project-image"
-        />
+        <Label>Project Image *</Label>
+        <div className="space-y-3">
+          {imagePreview && (
+            <div className="relative rounded-md overflow-hidden border">
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="w-full h-40 object-cover"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="absolute top-2 right-2"
+                onClick={() => {
+                  setImagePreview(null);
+                  setFormData(prev => ({ ...prev, imageUrl: "" }));
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              id="image-upload"
+              data-testid="input-project-image-file"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="flex-1"
+              data-testid="button-upload-image"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {isUploading ? `Uploading ${progress}%...` : "Upload Image"}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">or enter URL</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <Input
+            id="imageUrl"
+            value={formData.imageUrl}
+            onChange={(e) => {
+              setFormData({ ...formData, imageUrl: e.target.value });
+              if (e.target.value) setImagePreview(e.target.value);
+            }}
+            placeholder="https://example.com/image.jpg"
+            data-testid="input-project-image"
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

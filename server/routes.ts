@@ -6,6 +6,7 @@ import { Pool } from "pg";
 import { storage } from "./storage";
 import { insertProjectSchema, insertContactMessageSchema, insertProjectRequestSchema, SUPERADMIN_EMAIL } from "@shared/schema";
 import { generateOTP, sendOTPEmail, sendContactConfirmation } from "./email";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { z } from "zod";
 
 // Session type extension
@@ -88,6 +89,9 @@ export async function registerRoutes(
       },
     })
   );
+
+  // Register object storage routes
+  registerObjectStorageRoutes(app);
 
   // Seed database
   await storage.seedProjectsIfEmpty();

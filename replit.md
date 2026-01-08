@@ -66,3 +66,19 @@ The server provides:
 - Replit-specific Vite plugins for error overlay and dev tooling
 - TypeScript with strict mode enabled
 - Path aliases configured in both tsconfig.json and Vite
+
+### File Storage
+- Replit Object Storage for image uploads
+- Presigned URL upload flow (direct to cloud storage)
+- Support for both file upload and URL input for project images
+
+### Email/Authentication
+- Nodemailer for SMTP email delivery
+- OTP-based passwordless authentication
+- Session management with PostgreSQL store (connect-pg-simple)
+- SMTP credentials required: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+
+## Recent Changes
+- January 2026: Added image upload functionality to project form using Replit Object Storage
+- January 2026: Configured SMTP settings for OTP email delivery in development
+- January 2026: Migrated project to Replit environment with full authentication support
