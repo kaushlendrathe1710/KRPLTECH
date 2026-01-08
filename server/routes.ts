@@ -6,7 +6,7 @@ import { Pool } from "pg";
 import { storage } from "./storage";
 import { insertProjectSchema, insertContactMessageSchema, insertProjectRequestSchema, SUPERADMIN_EMAIL } from "@shared/schema";
 import { generateOTP, sendOTPEmail, sendContactConfirmation } from "./email";
-import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { getUploadUrl } from "./s3";
 import { z } from "zod";
 
 // Session type extension
@@ -90,8 +90,24 @@ export async function registerRoutes(
     })
   );
 
-  // Register object storage routes
-  registerObjectStorageRoutes(app);
+  // S3 upload route
+  app.post("/api/uploads/request-url", async (req, res) => {
+    try {
+      const { name, contentType } = req.body;
+      if (!name) {
+        return res.status(400).json({ error: "Missing required field: name" });
+      }
+      const { uploadUrl, objectKey, publicUrl } = await getUploadUrl(name, contentType || "image/jpeg");
+      res.json({
+        uploadURL: uploadUrl,
+        objectPath: publicUrl,
+        metadata: { name, contentType },
+      });
+    } catch (error) {
+      console.error("Error generating upload URL:", error);
+      res.status(500).json({ error: "Failed to generate upload URL" });
+    }
+  });
 
   // Seed database
   await storage.seedProjectsIfEmpty();

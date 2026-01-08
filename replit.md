@@ -68,9 +68,10 @@ The server provides:
 - Path aliases configured in both tsconfig.json and Vite
 
 ### File Storage
-- Replit Object Storage for image uploads
-- Presigned URL upload flow (direct to cloud storage)
+- AWS S3 for image uploads (user-provided credentials)
+- Presigned URL upload flow (direct to S3)
 - Support for both file upload and URL input for project images
+- Required secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET, AWS_REGION
 
 ### Email/Authentication
 - Nodemailer for SMTP email delivery
