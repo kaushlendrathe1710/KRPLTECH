@@ -98,7 +98,9 @@ export function useUpload(options: UseUploadOptions = {}) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload file to storage");
+        const errorText = await response.text().catch(() => "");
+        console.error("S3 upload failed:", response.status, errorText);
+        throw new Error(`Failed to upload file to storage (${response.status})`);
       }
     },
     []
