@@ -41,3 +41,9 @@ waitForPort = 5000
 [agent]
 integrations = ["javascript_database:1.0.0", "javascript_object_storage:2.0.0"]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+AWS_S3_BUCKET = "chunumunu"
+AWS_REGION = "ap-northeast-1"
