@@ -20,6 +20,7 @@ export async function getUploadUrl(fileName: string, contentType: string): Promi
     Bucket: bucket,
     Key: objectKey,
     ContentType: contentType,
+    ACL: "public-read",
   });
 
   const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
