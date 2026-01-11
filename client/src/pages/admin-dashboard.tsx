@@ -875,12 +875,18 @@ function ProjectForm({
     featured: project?.featured || 0,
   });
   const [imagePreview, setImagePreview] = useState<string | null>(project?.imageUrl || null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
       const imageUrl = response.objectPath;
       setFormData(prev => ({ ...prev, imageUrl }));
       setImagePreview(imageUrl);
+      setUploadError(null);
+    },
+    onError: (error) => {
+      setUploadError(error.message || "Upload failed. Please check S3 bucket CORS settings.");
+      setImagePreview(null);
     },
   });
 
@@ -1027,6 +1033,9 @@ function ProjectForm({
             placeholder="https://example.com/image.jpg"
             data-testid="input-project-image"
           />
+          {uploadError && (
+            <p className="text-sm text-destructive">{uploadError}</p>
+          )}
         </div>
       </div>
 
@@ -1083,8 +1092,8 @@ function ProjectForm({
         <DialogClose asChild>
           <Button type="button" variant="outline">Cancel</Button>
         </DialogClose>
-        <Button type="submit" disabled={isLoading} data-testid="button-submit-project">
-          {isLoading ? "Saving..." : (project ? "Update Project" : "Create Project")}
+        <Button type="submit" disabled={isLoading || isUploading} data-testid="button-submit-project">
+          {isLoading ? "Saving..." : isUploading ? "Uploading..." : (project ? "Update Project" : "Create Project")}
         </Button>
       </DialogFooter>
     </form>
