@@ -1,30 +1,39 @@
 import nodemailer from "nodemailer";
+import dns from "dns/promises";
 
 // Create transporter with SMTP settings from environment
-const createTransporter = () => {
-  const host = process.env.SMTP_HOST;
+const createTransporter = async () => {
+   const smtpHost = process.env.SMTP_HOST as string;
+
+  // Resolve IPv4 explicitly
+  const { address } = await dns.lookup(smtpHost, { family: 4 });
+
+
   const port = parseInt(process.env.SMTP_PORT || "587");
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
-  if (!host || !user || !pass) {
+  if (!smtpHost || !user || !pass) {
     console.warn("SMTP not configured - emails will be logged to console");
     return null;
   }
 
   return nodemailer.createTransport({
-    host,
+    host: address,
     port,
     secure: port === 465,
     auth: { user, pass },
+    tls: {
+      servername: smtpHost, // IMPORTANT for certificate validation
+    },
   });
 };
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
-const getTransporter = () => {
+const getTransporter = async () => {
   if (!transporter) {
-    transporter = createTransporter();
+    transporter = await createTransporter();
   }
   return transporter;
 };
@@ -34,8 +43,8 @@ export const generateOTP = (): string => {
 };
 
 export const sendOTPEmail = async (email: string, otp: string): Promise<boolean> => {
-  const transport = getTransporter();
-  
+  const transport = await getTransporter();
+
   // Use SMTP_USER as sender if SMTP_FROM not specified (avoids sender rejection)
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@krpl.tech",
@@ -74,8 +83,8 @@ export const sendOTPEmail = async (email: string, otp: string): Promise<boolean>
 };
 
 export const sendContactConfirmation = async (email: string, name: string): Promise<boolean> => {
-  const transport = getTransporter();
-  
+  const transport = await getTransporter();
+
   // Use SMTP_USER as sender if SMTP_FROM not specified (avoids sender rejection)
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@krpl.tech",

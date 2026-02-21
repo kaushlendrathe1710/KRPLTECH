@@ -14,8 +14,8 @@ const contactInfo = [
   {
     icon: Mail,
     label: "Email",
-    value: "admin@mymegaminds.com",
-    href: "mailto:admin@mymegaminds.com",
+    value: "kaushlendra.k12@fms.edu",
+    href: "mailto:kaushlendra.k12@fms.edu",
   },
   {
     icon: MapPin,
@@ -100,12 +100,12 @@ export function ContactSection() {
             Have a project in mind? We'd love to hear about it. Reach out and let's discuss how krpl.tech can help bring your vision to life.
           </p>
         </div>
-        
+
         <div className="grid gap-8 lg:grid-cols-2">
           <div>
             <Card className="p-6 md:p-8">
               <h3 className="text-xl font-semibold mb-6">Send us a message</h3>
-              
+
               {isSubmitted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
@@ -119,53 +119,53 @@ export function ContactSection() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
-                      <Input 
+                      <Input
                         id="name"
                         name="name"
-                        placeholder="Your name" 
-                        required 
+                        placeholder="Your name"
+                        required
                         data-testid="input-name"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input 
+                      <Input
                         id="email"
                         name="email"
-                        type="email" 
-                        placeholder="your@email.com" 
-                        required 
+                        type="email"
+                        placeholder="your@email.com"
+                        required
                         data-testid="input-email"
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="subject">Subject</Label>
-                    <Input 
+                    <Input
                       id="subject"
                       name="subject"
-                      placeholder="What's this about?" 
-                      required 
+                      placeholder="What's this about?"
+                      required
                       data-testid="input-subject"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="message">Message</Label>
-                    <Textarea 
+                    <Textarea
                       id="message"
                       name="message"
-                      placeholder="Tell us about your project..." 
+                      placeholder="Tell us about your project..."
                       rows={5}
-                      required 
+                      required
                       data-testid="input-message"
                     />
                   </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
+
+                  <Button
+                    type="submit"
+                    className="w-full"
                     disabled={submitMutation.isPending}
                     data-testid="button-submit-contact"
                   >
@@ -185,7 +185,7 @@ export function ContactSection() {
               )}
             </Card>
           </div>
-          
+
           <div className="space-y-6">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
@@ -198,8 +198,8 @@ export function ContactSection() {
                     <div>
                       <div className="text-sm text-muted-foreground">{item.label}</div>
                       {item.href ? (
-                        <a 
-                          href={item.href} 
+                        <a
+                          href={item.href}
                           className="font-medium hover:text-primary transition-colors"
                           data-testid={`link-${item.label.toLowerCase()}`}
                         >
@@ -213,7 +213,7 @@ export function ContactSection() {
                 ))}
               </div>
             </Card>
-            
+
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
               <div className="flex gap-3 flex-wrap">
@@ -233,11 +233,11 @@ export function ContactSection() {
                 ))}
               </div>
             </Card>
-            
+
             <Card className="p-6 bg-primary/5 border-primary/20">
               <h3 className="text-lg font-semibold mb-2">Let's Work Together</h3>
               <p className="text-sm text-muted-foreground">
-                Whether you need a new website, mobile app, or custom software solution, 
+                Whether you need a new website, mobile app, or custom software solution,
                 krpl.tech is here to help. We offer competitive rates and flexible engagement models.
               </p>
             </Card>

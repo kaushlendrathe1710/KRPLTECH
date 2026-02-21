@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
+import { FilterBar } from "@/components/filter-bar";
 import { HeroSection } from "@/components/hero-section";
 import { ProjectGrid } from "@/components/project-grid";
 import { ProjectModal } from "@/components/project-modal";
@@ -61,10 +62,7 @@ export default function Home() {
       <Header
         onAboutClick={handleAboutClick}
         onContactClick={handleContactClick}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onProjectsClick={handleViewProjects}
       />
 
       <main>
@@ -94,6 +92,15 @@ export default function Home() {
                   {searchQuery && ` matching "${searchQuery}"`}
                 </p>
               )}
+            </div>
+
+            <div className="mb-8">
+              <FilterBar
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+              />
             </div>
 
             <ProjectGrid
