@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
+import { FilterBar } from "@/components/filter-bar";
 import { HeroSection } from "@/components/hero-section";
 import { ProjectGrid } from "@/components/project-grid";
 import { ProjectModal } from "@/components/project-modal";
@@ -15,7 +16,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  
+
   const projectsRef = useRef<HTMLDivElement>(null);
 
   const { data: projects = [], isLoading } = useQuery<Project[]>({
@@ -26,7 +27,7 @@ export default function Home() {
     return projects.filter((project) => {
       const matchesCategory =
         selectedCategory === "All" || project.category === selectedCategory;
-      
+
       const matchesSearch =
         !searchQuery ||
         project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -34,7 +35,7 @@ export default function Home() {
         project.technologies.some((tech) =>
           tech.toLowerCase().includes(searchQuery.toLowerCase())
         );
-      
+
       return matchesCategory && matchesSearch;
     });
   }, [projects, selectedCategory, searchQuery]);
@@ -58,24 +59,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        onAboutClick={handleAboutClick} 
+      <Header
+        onAboutClick={handleAboutClick}
         onContactClick={handleContactClick}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onProjectsClick={handleViewProjects}
       />
-      
+
       <main>
-        <HeroSection 
-          projectCount={projects.length} 
-          onViewProjects={handleViewProjects} 
+        <HeroSection
+          projectCount={projects.length}
+          onViewProjects={handleViewProjects}
         />
-        
-        <section 
-          id="projects" 
-          ref={projectsRef} 
+
+        <section
+          id="projects"
+          ref={projectsRef}
           className="py-16 md:py-24"
         >
           <div className="mx-auto max-w-7xl px-6">
@@ -84,7 +82,7 @@ export default function Home() {
                 Our Projects
               </h2>
               <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-                Explore our portfolio of web applications, mobile apps, and digital solutions 
+                Explore our portfolio of web applications, mobile apps, and digital solutions
                 built with modern technologies
               </p>
               {(selectedCategory !== "All" || searchQuery) && (
@@ -95,7 +93,16 @@ export default function Home() {
                 </p>
               )}
             </div>
-            
+
+            <div className="mb-8">
+              <FilterBar
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+              />
+            </div>
+
             <ProjectGrid
               projects={filteredProjects}
               isLoading={isLoading}
@@ -103,14 +110,14 @@ export default function Home() {
             />
           </div>
         </section>
-        
+
         <StatsSection projectCount={projects.length} />
         <AboutSection />
         <ContactSection />
       </main>
-      
+
       <Footer />
-      
+
       <ProjectModal
         project={selectedProject}
         open={modalOpen}

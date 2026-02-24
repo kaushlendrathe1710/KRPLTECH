@@ -5,12 +5,12 @@ import { randomUUID } from "crypto";
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || "us-east-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.AWS_API_KEY || "",
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
 
-const bucket = process.env.AWS_S3_BUCKET || "";
+const bucket = process.env.AWS_BUCKET_NAME || "";
 
 export async function getUploadUrl(fileName: string, contentType: string): Promise<{ uploadUrl: string; objectKey: string; publicUrl: string }> {
   const ext = fileName.split(".").pop() || "jpg";

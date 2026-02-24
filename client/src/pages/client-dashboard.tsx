@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isValidMobile } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { 
-  FolderPlus, FolderKanban, User, ArrowLeft, LogOut, 
+import {
+  FolderPlus, FolderKanban, User, ArrowLeft, LogOut,
   Loader2, Clock, CheckCircle, XCircle, Hourglass
 } from "lucide-react";
 import type { ProjectRequest } from "@shared/schema";
@@ -24,6 +26,7 @@ import { PROJECT_CATEGORIES } from "@shared/schema";
 export default function ClientDashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("requests");
   const [newRequestOpen, setNewRequestOpen] = useState(false);
 
@@ -70,6 +73,7 @@ export default function ClientDashboard() {
 
   const [profileName, setProfileName] = useState(user?.name || "");
   const [profileMobile, setProfileMobile] = useState(user?.mobile || "");
+  const [profileMobileError, setProfileMobileError] = useState("");
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -115,7 +119,12 @@ export default function ClientDashboard() {
 
   const handleProfileUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfileMutation.mutate({ name: profileName, mobile: profileMobile });
+    const m = (profileMobile || "").trim();
+    if (m && !isValidMobile(m)) {
+      setProfileMobileError("Enter a valid 10-digit mobile starting with 6-9");
+      return;
+    }
+    updateProfileMutation.mutate({ name: profileName, mobile: m || profileMobile });
   };
 
   return (
@@ -131,12 +140,32 @@ export default function ClientDashboard() {
             </Link>
             <h1 className="font-semibold">My Dashboard</h1>
           </div>
-          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">{user?.name || user?.email}</span>
-            <Button variant="outline" size="sm" onClick={logout} data-testid="button-logout">
+            <Button variant="outline" size="sm" onClick={() => setConfirmLogoutOpen(true)} data-testid="button-logout">
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>
+
+            <AlertDialog open={confirmLogoutOpen} onOpenChange={setConfirmLogoutOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                  <AlertDialogDescription>Are you sure you want to log out?</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      setConfirmLogoutOpen(false);
+                      await logout();
+                    }}
+                  >
+                    Logout
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </header>
@@ -345,14 +374,21 @@ export default function ClientDashboard() {
                     <Input
                       id="profile-mobile"
                       value={profileMobile}
-                      onChange={(e) => setProfileMobile(e.target.value)}
-                      placeholder="+1 234 567 890"
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        setProfileMobile(digits);
+                        if (digits === "") setProfileMobileError("");
+                        else if (!isValidMobile(digits)) setProfileMobileError("Invalid mobile (must start with 6-9 and be 10 digits)");
+                        else setProfileMobileError("");
+                      }}
+                      placeholder="9876543210"
                       data-testid="input-profile-mobile"
                     />
+                    {profileMobileError && <p className="text-sm text-destructive mt-1">{profileMobileError}</p>}
                   </div>
                   <Button
                     type="submit"
-                    disabled={updateProfileMutation.isPending}
+                    disabled={updateProfileMutation.isPending || (!!profileMobile.trim() && !isValidMobile(profileMobile.trim()))}
                     data-testid="button-update-profile"
                   >
                     {updateProfileMutation.isPending ? (

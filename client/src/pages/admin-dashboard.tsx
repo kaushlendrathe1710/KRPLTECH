@@ -30,7 +30,7 @@ import {
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { 
+import {
   LayoutDashboard, MessageSquare, Users, FolderKanban, Briefcase,
   Settings, ArrowLeft, LogOut, Check, Eye, Plus, Pencil, Trash2,
   UserCog, Shield, TrendingUp, Mail, Calendar, Clock, CheckCircle, Search, Upload, X
@@ -44,6 +44,7 @@ export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<Section>("overview");
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectSearch, setProjectSearch] = useState("");
@@ -270,10 +271,30 @@ export default function AdminDashboard() {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <Button variant="outline" size="sm" onClick={logout} data-testid="button-logout">
+              <Button variant="outline" size="sm" onClick={() => setConfirmLogoutOpen(true)} data-testid="button-logout">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </Button>
+
+              <AlertDialog open={confirmLogoutOpen} onOpenChange={setConfirmLogoutOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                    <AlertDialogDescription>Are you sure you want to log out?</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        setConfirmLogoutOpen(false);
+                        await logout();
+                      }}
+                    >
+                      Logout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </header>
 
@@ -281,7 +302,7 @@ export default function AdminDashboard() {
             {activeSection === "overview" && (
               <div className="space-y-6">
                 <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-                
+
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <Card className="hover-elevate cursor-pointer" onClick={() => setActiveSection("messages")}>
                     <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
@@ -533,7 +554,7 @@ export default function AdminDashboard() {
             {activeSection === "users" && (
               <div className="space-y-6">
                 <h1 className="text-2xl font-bold">User Management</h1>
-                
+
                 <div className="grid gap-6 lg:grid-cols-2">
                   <Card>
                     <CardHeader>
@@ -853,12 +874,12 @@ export default function AdminDashboard() {
   );
 }
 
-function ProjectForm({ 
-  project, 
-  onSubmit, 
-  isLoading 
-}: { 
-  project: Project | null; 
+function ProjectForm({
+  project,
+  onSubmit,
+  isLoading
+}: {
+  project: Project | null;
   onSubmit: (data: Partial<Project>) => void;
   isLoading: boolean;
 }) {
@@ -976,9 +997,9 @@ function ProjectForm({
         <div className="space-y-3">
           {imagePreview && (
             <div className="relative rounded-md overflow-hidden border">
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
+              <img
+                src={imagePreview}
+                alt="Preview"
                 className="w-full h-40 object-cover"
               />
               <Button
