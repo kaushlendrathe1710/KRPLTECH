@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { isValidMobile } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +24,16 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [mobileError, setMobileError] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
   const { toast } = useToast();
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (!resendCooldown) return;
+    const id = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendCooldown]);
 
   const requestOtpMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -34,6 +43,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     onSuccess: (data) => {
       setIsNewUser(data.isNewUser);
       setStep("otp");
+      setResendCooldown(60);
       toast({
         title: "Code sent!",
         description: "Check your email for the 6-digit code.",
@@ -87,6 +97,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setName("");
     setMobile("");
     setIsNewUser(false);
+    setResendCooldown(0);
     onClose();
   };
 
@@ -110,9 +121,13 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim()) {
-      verifyOtpMutation.mutate({ email, code: otp, name: name.trim(), mobile: mobile.trim() || undefined });
+    if (!name.trim()) return;
+    const m = mobile.trim();
+    if (m && !isValidMobile(m)) {
+      setMobileError("Enter a valid 10-digit mobile starting with 6-9");
+      return;
     }
+    verifyOtpMutation.mutate({ email, code: otp, name: name.trim(), mobile: m || undefined });
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -220,10 +235,10 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               variant="ghost"
               className="w-full"
               onClick={() => requestOtpMutation.mutate(email)}
-              disabled={requestOtpMutation.isPending}
+              disabled={requestOtpMutation.isPending || resendCooldown > 0}
               data-testid="button-resend-code"
             >
-              Resend Code
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
             </Button>
           </form>
         )}
@@ -247,16 +262,27 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               <Input
                 id="mobile"
                 type="tel"
-                placeholder="+1 234 567 890"
+                placeholder="9876543210"
                 value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setMobile(digits);
+                  if (digits === "") setMobileError("");
+                  else if (!isValidMobile(digits)) setMobileError("Invalid mobile (must start with 6-9 and be 10 digits)");
+                  else setMobileError("");
+                }}
                 data-testid="input-register-mobile"
               />
+              {mobileError && <p className="text-sm text-destructive mt-1">{mobileError}</p>}
             </div>
             <Button
               type="submit"
               className="w-full"
-              disabled={!name.trim() || verifyOtpMutation.isPending}
+              disabled={
+                !name.trim() ||
+                verifyOtpMutation.isPending ||
+                (!!mobile.trim() && !isValidMobile(mobile.trim()))
+              }
               data-testid="button-complete-registration"
             >
               {verifyOtpMutation.isPending ? (
