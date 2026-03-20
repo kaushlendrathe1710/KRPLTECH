@@ -10,9 +10,10 @@ interface HeaderProps {
   onAboutClick: () => void;
   onContactClick: () => void;
   onProjectsClick: () => void;
+  onServicesClick: () => void;
 }
 
-export function Header({ onAboutClick, onContactClick, onProjectsClick }: HeaderProps) {
+export function Header({ onAboutClick, onContactClick, onProjectsClick, onServicesClick }: HeaderProps) {
   const { isAuthenticated, isAdmin } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
 
@@ -44,6 +45,14 @@ export function Header({ onAboutClick, onContactClick, onProjectsClick }: Header
                   data-testid="button-nav-about"
                 >
                   About
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onServicesClick}
+                  data-testid="button-nav-services"
+                >
+                  Services
                 </Button>
                 <Button
                   variant="ghost"

@@ -329,8 +329,14 @@ export default function ClientDashboard() {
                                 {req.timeline && <span>Timeline: {req.timeline}</span>}
                               </div>
                             </div>
+                            <div className="flex flex-col gap-2">
+
                             <div className="text-xs text-muted-foreground text-right flex-shrink-0">
                               {new Date(req.createdAt!).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground text-right flex-shrink-0">
+                              we'll respond within 24 hours
+                            </div>
                             </div>
                           </div>
                         </Card>

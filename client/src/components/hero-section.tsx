@@ -96,7 +96,6 @@ export function HeroSection({ projectCount, onViewProjects }: HeroSectionProps) 
           </Button>
         </div>
       </div>
-
     </section>
   );
 }
