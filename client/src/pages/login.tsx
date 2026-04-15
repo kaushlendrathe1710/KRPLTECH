@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { isValidMobile } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,15 +9,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, ArrowLeft } from "lucide-react";
 
-interface LoginModalProps {
-  open: boolean;
-  onClose: () => void;
-}
-
 type Step = "email" | "otp" | "register";
 
-export function LoginModal({ open, onClose }: LoginModalProps) {
-  const [, setLocation] = useLocation();
+export default function LoginPage() {
+  const [, navigate] = useLocation();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -63,23 +57,14 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
       const res = await apiRequest("POST", "/api/auth/verify-otp", data);
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data.requiresRegistration) {
         setStep("register");
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      toast({
-        title: "Welcome!",
-        description: `Logged in as ${data.user.name || data.user.email}`,
-      });
-      // Redirect to appropriate dashboard based on role BEFORE closing modal
       const targetPath = data.user.role === "admin" ? "/admin" : "/dashboard";
-      resetAndClose();
-      // Use setTimeout to ensure navigation happens after modal closes
-      setTimeout(() => {
-        setLocation(targetPath);
-      }, 100);
+      // Simple: perform a full-page navigation so server session is read on load
+      window.location.href = targetPath;
     },
     onError: () => {
       toast({
@@ -89,17 +74,6 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
       });
     },
   });
-
-  const resetAndClose = () => {
-    setStep("email");
-    setEmail("");
-    setOtp("");
-    setName("");
-    setMobile("");
-    setIsNewUser(false);
-    setResendCooldown(0);
-    onClose();
-  };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,38 +104,24 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     verifyOtpMutation.mutate({ email, code: otp, name: name.trim(), mobile: m || undefined });
   };
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (!isOpen) {
-      resetAndClose();
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md bg-popover p-6 rounded-lg shadow">
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
             {step !== "email" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setStep(step === "register" ? "otp" : "email")}
-                data-testid="button-back"
-              >
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setStep(step === "register" ? "otp" : "email") }>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            {step === "email" && "Sign In"}
-            {step === "otp" && "Enter Code"}
-            {step === "register" && "Complete Registration"}
-          </DialogTitle>
-          <DialogDescription>
+            <h2 className="text-lg font-semibold">{step === "email" ? "Sign In" : step === "otp" ? "Enter Code" : "Complete Registration"}</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
             {step === "email" && "Enter your email to receive a login code."}
             {step === "otp" && `We sent a 6-digit code to ${email}`}
             {step === "register" && "Please provide your details to complete registration."}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         {step === "email" && (
           <form onSubmit={handleEmailSubmit} className="space-y-4">
@@ -181,12 +141,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 />
               </div>
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={requestOtpMutation.isPending}
-              data-testid="button-send-code"
-            >
+            <Button type="submit" className="w-full" disabled={requestOtpMutation.isPending} data-testid="button-send-code">
               {requestOtpMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -215,12 +170,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 data-testid="input-otp"
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={otp.length !== 6 || verifyOtpMutation.isPending}
-              data-testid="button-verify-code"
-            >
+            <Button type="submit" className="w-full" disabled={otp.length !== 6 || verifyOtpMutation.isPending} data-testid="button-verify-code">
               {verifyOtpMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -230,14 +180,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 "Verify Code"
               )}
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              onClick={() => requestOtpMutation.mutate(email)}
-              disabled={requestOtpMutation.isPending || resendCooldown > 0}
-              data-testid="button-resend-code"
-            >
+            <Button type="button" variant="ghost" className="w-full" onClick={() => requestOtpMutation.mutate(email)} disabled={requestOtpMutation.isPending || resendCooldown > 0} data-testid="button-resend-code">
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
             </Button>
           </form>
@@ -247,15 +190,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name *</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                data-testid="input-register-name"
-              />
+              <Input id="name" type="text" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required data-testid="input-register-name" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="mobile">Mobile Number (optional)</Label>
@@ -278,11 +213,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <Button
               type="submit"
               className="w-full"
-              disabled={
-                !name.trim() ||
-                verifyOtpMutation.isPending ||
-                (!!mobile.trim() && !isValidMobile(mobile.trim()))
-              }
+              disabled={!name.trim() || verifyOtpMutation.isPending || (!!mobile.trim() && !isValidMobile(mobile.trim()))}
               data-testid="button-complete-registration"
             >
               {verifyOtpMutation.isPending ? (
@@ -296,7 +227,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             </Button>
           </form>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

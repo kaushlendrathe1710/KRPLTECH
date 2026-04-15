@@ -137,7 +137,13 @@ export default function Home() {
           onClose={() => setModalOpen(false)}
         />
       </div>
-      <a aria-label="Chat on WhatsApp" href="https://wa.me/919877454036" target="_blank" rel="noopener noreferrer" className="fixed bottom-5 right-5">
+      <a
+        aria-label="Chat on WhatsApp"
+        href="https://wa.me/919877454036?text=Hi%20KRPL%20Tech%20-%20I%20am%20interested%20in%20your%20software%20development%20services.%20Could%20we%20discuss%20my%20project%3F"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-5 right-5"
+      >
         <SiWhatsapp className="h-10 w-10 text-green-500" />
       </a>
     </>

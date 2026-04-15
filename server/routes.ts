@@ -1,13 +1,15 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { Pool } from "pg";
 import { storage } from "./storage";
-import { insertProjectSchema, insertContactMessageSchema, insertProjectRequestSchema, SUPERADMIN_EMAIL } from "@shared/schema";
+import { insertProjectSchema, insertContactMessageSchema, insertProjectRequestSchema } from "@shared/schema";
 import { generateOTP, sendOTPEmail, sendContactConfirmation } from "./email";
 import { getUploadUrl } from "./s3";
 import { z } from "zod";
+import {SUPERADMIN_EMAIL} from "./storage";
 
 // Session type extension
 declare module "express-session" {
@@ -40,16 +42,16 @@ export async function registerRoutes(
   if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
   }
-  
+
   // Get database URL with fallback and cleanup (same logic as db.ts)
   let sessionDbUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
   if (sessionDbUrl) {
     sessionDbUrl = sessionDbUrl.replace(/[&?]channel_binding=require/g, '');
   }
-  
+
   // Setup session with PostgreSQL store
   const PgSession = connectPgSimple(session);
-  
+
   // Create session table manually to avoid file not found error in production
   if (sessionDbUrl) {
     const pool = new Pool({ connectionString: sessionDbUrl });
@@ -70,7 +72,7 @@ export async function registerRoutes(
       await pool.end();
     }
   }
-  
+
   app.use(
     session({
       store: new PgSession({
@@ -114,9 +116,27 @@ export async function registerRoutes(
   await storage.seedSuperadmin();
 
   // ========== AUTH ROUTES ==========
-  
-  // Request OTP
-  app.post("/api/auth/request-otp", async (req, res) => {
+
+  // Request OTP (rate limited)
+  const requestOtpWindowMs = 60 * 60 * 1000; // 1 hour
+  const requestOtpLimiter = rateLimit({
+    windowMs: requestOtpWindowMs,
+    max: 5, // max 5 requests per key per hour
+    keyGenerator: (req) => {
+      const ip = ipKeyGenerator(req.ip ?? "unknown");
+      const email = req.body?.email ?? "anon";
+      return `${ip}-${email}`;
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (_req: Request, res: Response) => {
+      const retryAfterSec = Math.ceil(requestOtpWindowMs / 1000);
+      res.setHeader("Retry-After", String(retryAfterSec));
+      return res.status(429).json({ error: "Too many OTP requests. Try again later." });
+    },
+  });
+
+  app.post("/api/auth/request-otp", requestOtpLimiter, async (req, res) => {
     try {
       const schema = z.object({ email: z.string().email() });
       const result = schema.safeParse(req.body);
@@ -135,11 +155,11 @@ export async function registerRoutes(
 
       // Check if user exists to inform frontend
       const user = await storage.getUserByEmail(email);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         isNewUser: !user,
-        message: "OTP sent to your email" 
+        message: "OTP sent to your email"
       });
     } catch (error) {
       console.error("Failed to send OTP:", error);
@@ -147,8 +167,26 @@ export async function registerRoutes(
     }
   });
 
-  // Verify OTP and login/register
-  app.post("/api/auth/verify-otp", async (req, res) => {
+  // Verify OTP and login/register (rate limited)
+  const verifyOtpWindowMs = 60 * 60 * 1000; // 1 hour
+  const verifyOtpLimiter = rateLimit({
+    windowMs: verifyOtpWindowMs,
+    max: 10, // max 10 verification attempts per key per hour
+    keyGenerator: (req) => {
+      const ip = ipKeyGenerator(req.ip ?? "unknown");
+      const email = req.body?.email ?? "anon";
+      return `${ip}-${email}`;
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (_req: Request, res: Response) => {
+      const retryAfterSec = Math.ceil(verifyOtpWindowMs / 1000);
+      res.setHeader("Retry-After", String(retryAfterSec));
+      return res.status(429).json({ error: "Too many verification attempts. Try again later." });
+    },
+  });
+
+  app.post("/api/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
     try {
       const schema = z.object({
         email: z.string().email(),
@@ -162,7 +200,7 @@ export async function registerRoutes(
       }
 
       const { email, code, name, mobile } = result.data;
-      
+
       // Validate OTP first
       console.log(`[OTP] Verifying code for ${email}: ${code}`);
       const token = await storage.getValidOTP(email, code);
@@ -174,21 +212,21 @@ export async function registerRoutes(
 
       // Check if user exists
       let user = await storage.getUserByEmail(email);
-      
+
       if (!user) {
         // New user - require name for registration
         // Don't consume OTP yet if we need registration info
         if (!name) {
           return res.status(400).json({ error: "Name is required for new users", requiresRegistration: true });
         }
-        
+
         // Now consume the OTP since we have all needed info
         await storage.markOTPUsed(token.id);
-        
+
         // Check if this is the superadmin email
         const role = email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase() ? "admin" : "client";
         const isProtected = email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
-        
+
         user = await storage.createUser({
           email,
           name,
@@ -211,9 +249,9 @@ export async function registerRoutes(
           console.error("Failed to save session:", err);
           return res.status(500).json({ error: "Failed to create session" });
         }
-        
-        res.json({ 
-          success: true, 
+
+        res.json({
+          success: true,
           user: {
             id: user.id,
             email: user.email,
@@ -262,7 +300,7 @@ export async function registerRoutes(
   });
 
   // ========== CONTACT MESSAGES ==========
-  
+
   // Submit contact form (public)
   app.post("/api/contact", async (req, res) => {
     try {
@@ -272,7 +310,7 @@ export async function registerRoutes(
       }
 
       const message = await storage.createContactMessage(result.data);
-      
+
       // Send confirmation email
       await sendContactConfirmation(result.data.email, result.data.name);
 
@@ -299,8 +337,8 @@ export async function registerRoutes(
     try {
       const { status } = req.body;
       const message = await storage.updateContactMessageStatus(
-        req.params.id, 
-        status, 
+        req.params.id,
+        status,
         req.session.userId
       );
       if (!message) {
@@ -314,7 +352,7 @@ export async function registerRoutes(
   });
 
   // ========== ADMIN ROUTES ==========
-  
+
   // Get all clients
   app.get("/api/admin/clients", requireAdmin, async (_req, res) => {
     try {
@@ -344,7 +382,7 @@ export async function registerRoutes(
   app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
       const { role, name, mobile } = req.body;
-      
+
       // Check if target user is protected
       const targetUser = await storage.getUser(req.params.id);
       if (!targetUser) {
@@ -353,12 +391,12 @@ export async function registerRoutes(
       if (targetUser.isProtected && role !== targetUser.role) {
         return res.status(403).json({ error: "Cannot modify superadmin role" });
       }
-      
+
       const updates: Record<string, any> = {};
       if (role) updates.role = role;
       if (name !== undefined) updates.name = name;
       if (mobile !== undefined) updates.mobile = mobile;
-      
+
       const user = await storage.updateUser(req.params.id, updates);
       res.json(user);
     } catch (error) {
@@ -417,7 +455,7 @@ export async function registerRoutes(
       ]);
 
       const newMessages = messages.filter(m => m.status === "new").length;
-      const activeRequests = requests.filter(r => 
+      const activeRequests = requests.filter(r =>
         ["pending", "reviewing", "approved", "in_progress"].includes(r.status)
       ).length;
       const completedRequests = requests.filter(r => r.status === "completed").length;
@@ -438,7 +476,7 @@ export async function registerRoutes(
   });
 
   // ========== CLIENT ROUTES ==========
-  
+
   // Get client's project requests
   app.get("/api/client/requests", requireAuth, async (req, res) => {
     try {
@@ -491,7 +529,7 @@ export async function registerRoutes(
   });
 
   // ========== PROJECT ROUTES ==========
-  
+
   // Get all projects (public)
   app.get("/api/projects", async (_req, res) => {
     try {
