@@ -1,5 +1,5 @@
 import { Code2 } from "lucide-react";
-import { SiLinkedin, SiGithub, SiX } from "react-icons/si";
+import { FaLinkedinIn, FaGithub, FaTwitter  } from "react-icons/fa";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -17,7 +17,7 @@ export function Footer() {
               Building digital solutions with expertise and innovation.
             </p>
           </div>
-          
+
           <div>
             <h4 className="font-medium">Quick Links</h4>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
@@ -38,7 +38,7 @@ export function Footer() {
               </li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-medium">Connect</h4>
             <div className="mt-2 flex gap-3">
@@ -49,7 +49,7 @@ export function Footer() {
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="link-footer-github"
               >
-                <SiGithub className="h-5 w-5" />
+                <FaGithub className="h-5 w-5" />
               </a>
               <a
                 href="https://linkedin.com/company/krpl-tech"
@@ -58,7 +58,7 @@ export function Footer() {
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="link-footer-linkedin"
               >
-                <SiLinkedin className="h-5 w-5" />
+                <FaLinkedinIn className="h-5 w-5" />
               </a>
               <a
                 href="https://twitter.com/krpltech"
@@ -67,12 +67,12 @@ export function Footer() {
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="link-footer-twitter"
               >
-                <SiX className="h-5 w-5" />
+                <FaTwitter className="h-5 w-5" />
               </a>
             </div>
           </div>
         </div>
-        
+
         <div className="mt-8 border-t border-border pt-8 text-center text-sm text-muted-foreground">
           <p>&copy; {currentYear} krpl.tech. All rights reserved.</p>
         </div>
