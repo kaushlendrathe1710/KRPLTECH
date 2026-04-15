@@ -1,14 +1,15 @@
-import { 
+import {
   users, projects, otpTokens, contactMessages, projectRequests,
-  type User, type InsertUser, 
+  type User, type InsertUser,
   type Project, type InsertProject,
   type OtpToken, type InsertOtpToken,
   type ContactMessage, type InsertContactMessage,
   type ProjectRequest, type InsertProjectRequest,
-  SUPERADMIN_EMAIL
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gt } from "drizzle-orm";
+
+export const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "";
 
 export interface IStorage {
   // Users
@@ -19,25 +20,25 @@ export interface IStorage {
   getAllClients(): Promise<User[]>;
   getAllAdmins(): Promise<User[]>;
   deleteUser(id: string): Promise<boolean>;
-  
+
   // OTP
   createOTP(otp: InsertOtpToken): Promise<OtpToken>;
   getValidOTP(email: string, code: string): Promise<OtpToken | undefined>;
   markOTPUsed(id: string): Promise<void>;
-  
+
   // Contact Messages
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
   getAllContactMessages(): Promise<ContactMessage[]>;
   getContactMessage(id: string): Promise<ContactMessage | undefined>;
   updateContactMessageStatus(id: string, status: string, handledBy?: string): Promise<ContactMessage | undefined>;
-  
+
   // Project Requests
   createProjectRequest(request: InsertProjectRequest): Promise<ProjectRequest>;
   getProjectRequestsByClient(clientId: string): Promise<ProjectRequest[]>;
   getAllProjectRequests(): Promise<ProjectRequest[]>;
   getProjectRequest(id: string): Promise<ProjectRequest | undefined>;
   updateProjectRequest(id: string, updates: Partial<ProjectRequest>): Promise<ProjectRequest | undefined>;
-  
+
   // Projects
   getAllProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
@@ -97,7 +98,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(otpTokens)
       .set({ used: true })
       .where(and(eq(otpTokens.email, otp.email.toLowerCase()), eq(otpTokens.used, false)));
-    
+
     const [token] = await db.insert(otpTokens).values({
       ...otp,
       email: otp.email.toLowerCase(),

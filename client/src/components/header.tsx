@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { } from "react";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Code2, LogIn, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { LoginModal } from "./login-modal";
 import { Link } from "wouter";
 
 interface HeaderProps {
@@ -15,7 +14,6 @@ interface HeaderProps {
 
 export function Header({ onAboutClick, onContactClick, onProjectsClick, onServicesClick }: HeaderProps) {
   const { isAuthenticated, isAdmin } = useAuth();
-  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <>
@@ -80,14 +78,12 @@ export function Header({ onAboutClick, onContactClick, onProjectsClick, onServic
                   </Button>
                 </Link>
               ) : (
-                <Button
-                  size="sm"
-                  onClick={() => setLoginOpen(true)}
-                  data-testid="button-login"
-                >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Login
-                </Button>
+                <Link href="/auth">
+                  <Button size="sm" data-testid="button-login">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Button>
+                </Link>
               )}
 
               <ThemeToggle />
@@ -97,8 +93,6 @@ export function Header({ onAboutClick, onContactClick, onProjectsClick, onServic
           {/* simple header; filters moved to projects section */}
         </div>
       </header>
-
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   );
 }

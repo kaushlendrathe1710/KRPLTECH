@@ -89,14 +89,19 @@ export const projectRequests = pgTable("project_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertProjectRequestSchema = createInsertSchema(projectRequests).omit({
-  id: true,
-  status: true,
-  adminNotes: true,
-  assignedTo: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertProjectRequestSchema = createInsertSchema(projectRequests)
+  .omit({
+    id: true,
+    status: true,
+    adminNotes: true,
+    assignedTo: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or fewer"),
+    description: z.string().min(1, "Description is required").max(700, "Description must be 700 characters or fewer"),
+  });
 
 export type InsertProjectRequest = z.infer<typeof insertProjectRequestSchema>;
 export type ProjectRequest = typeof projectRequests.$inferSelect;
@@ -127,7 +132,7 @@ export type Project = typeof projects.$inferSelect;
 export const PROJECT_CATEGORIES = [
   "All",
   "Web App",
-  "Mobile App", 
+  "Mobile App",
   "E-commerce",
   "Dashboard",
   "Landing Page",
@@ -136,6 +141,3 @@ export const PROJECT_CATEGORIES = [
 ] as const;
 
 export type ProjectCategory = typeof PROJECT_CATEGORIES[number];
-
-// Superadmin email constant
-export const SUPERADMIN_EMAIL = "kaushlendra.k12@fms.edu";

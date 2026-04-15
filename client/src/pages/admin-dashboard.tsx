@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useUpload } from "@/hooks/use-upload";
 import {
@@ -47,6 +47,8 @@ export default function AdminDashboard() {
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ProjectRequest | null>(null);
+  const [requestDetailsOpen, setRequestDetailsOpen] = useState(false);
   const [projectSearch, setProjectSearch] = useState("");
 
   const { data: stats } = useQuery<{
@@ -483,6 +485,7 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </ScrollArea>
+
               </div>
             )}
 
@@ -500,14 +503,11 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="space-y-4">
                       {requests.map((req) => (
-                        <Card key={req.id} className="p-4" data-testid={`request-${req.id}`}>
+                        <Card key={req.id} className="p-4 cursor-pointer" data-testid={`request-${req.id}`} onClick={() => { (document.activeElement as HTMLElement | null)?.blur(); setSelectedRequest(req); setRequestDetailsOpen(true); }}>
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span className="font-medium">{req.title}</span>
-                                <Badge className={`${getStatusColor(req.status)} text-white text-xs`}>
-                                  {req.status}
-                                </Badge>
                               </div>
                               <p className="text-sm text-muted-foreground line-clamp-2">{req.description}</p>
                               <div className="flex gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
@@ -526,22 +526,9 @@ export default function AdminDashboard() {
                                 {new Date(req.createdAt!).toLocaleString()}
                               </p>
                             </div>
-                            <Select
-                              value={req.status}
-                              onValueChange={(status) => updateRequestMutation.mutate({ id: req.id, status })}
-                            >
-                              <SelectTrigger className="w-[140px]" data-testid={`select-status-${req.id}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="reviewing">Reviewing</SelectItem>
-                                <SelectItem value="approved">Approved</SelectItem>
-                                <SelectItem value="in_progress">In Progress</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="flex flex-col items-end">
+                              <Badge className={`${getStatusColor(req.status)} text-white text-xs`}>{req.status}</Badge>
+                            </div>
                           </div>
                         </Card>
                       ))}
@@ -550,6 +537,84 @@ export default function AdminDashboard() {
                 </ScrollArea>
               </div>
             )}
+
+            {/* centralized request details dialog (always rendered) */}
+            <Dialog open={requestDetailsOpen} onOpenChange={setRequestDetailsOpen}>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{selectedRequest?.title}</DialogTitle>
+                  <DialogDescription>
+                    {selectedRequest?.category} • {selectedRequest?.budget || "No budget specified"}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="-mx-4 no-scrollbar max-h-[60vh] overflow-y-auto px-4">
+                  <div className="space-y-4 py-2">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
+                      <p className="mt-1 text-sm whitespace-pre-wrap">{selectedRequest?.description}</p>
+                    </div>
+
+                    {selectedRequest?.technologies && selectedRequest.technologies.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Technologies</h4>
+                        <div className="flex gap-1 mt-2 flex-wrap">
+                          {selectedRequest.technologies.map((t) => (
+                            <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                      <div>
+                        <div className="font-medium">Timeline</div>
+                        <div>{selectedRequest?.timeline || "Not specified"}</div>
+                      </div>
+                      <div>
+                        <div className="font-medium">Submitted</div>
+                        <div>{selectedRequest ? new Date(selectedRequest.createdAt!).toLocaleString() : "-"}</div>
+                      </div>
+                    </div>
+
+                    {selectedRequest?.adminNotes && (
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Admin Notes</h4>
+                        <p className="mt-1 text-sm whitespace-pre-wrap">{selectedRequest.adminNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <DialogFooter className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Select
+                      value={selectedRequest?.status || ""}
+                      onValueChange={(status) => {
+                        if (!selectedRequest) return;
+                        updateRequestMutation.mutate({ id: selectedRequest.id, status });
+                      }}
+                    >
+                      <SelectTrigger className="w-[180px]" data-testid="select-request-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="reviewing">Reviewing</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <DialogClose asChild>
+                    <Button variant="outline">Close</Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {activeSection === "users" && (
               <div className="space-y-6">

@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { isValidMobile } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
@@ -11,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +36,8 @@ export default function ClientDashboard() {
   const { data: requests = [], isLoading } = useQuery<ProjectRequest[]>({
     queryKey: ["/api/client/requests"],
   });
+  const [selectedRequest, setSelectedRequest] = useState<ProjectRequest | null>(null);
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
 
   const createRequestMutation = useMutation({
     mutationFn: async (data: {
@@ -60,6 +65,30 @@ export default function ClientDashboard() {
       });
     },
   });
+
+  const requestSchema = z.object({
+    title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or fewer"),
+    description: z.string().min(1, "Description is required").max(700, "Description must be 700 characters or fewer"),
+    category: z.string().optional(),
+    budget: z.string().optional(),
+    timeline: z.string().optional(),
+  });
+
+  type RequestForm = z.infer<typeof requestSchema>;
+
+  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<RequestForm>({
+    resolver: zodResolver(requestSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      category: undefined,
+      budget: undefined,
+      timeline: undefined,
+    },
+  });
+
+  const descriptionCount = watch("description")?.length || 0;
+
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: { name: string; mobile: string }) => {
@@ -198,79 +227,78 @@ export default function ClientDashboard() {
                     Tell us about your project and we'll get back to you with a proposal.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleNewRequest} className="space-y-4">
+
+                <form onSubmit={handleSubmit((data) => createRequestMutation.mutate(data))} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Project Title *</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      placeholder="E.g., E-commerce Website"
-                      required
-                      data-testid="input-request-title"
-                    />
+                    <Input id="title" {...register("title")} placeholder="E.g., E-commerce Website" data-testid="input-request-title" />
+                    {errors.title && <p className="text-sm text-destructive mt-1">{errors.title.message}</p>}
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="description">Description *</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      placeholder="Describe your project requirements, features, and goals..."
-                      rows={4}
-                      required
-                      data-testid="input-request-description"
-                    />
+                    <Textarea id="description" {...register("description")} placeholder="Describe your project requirements, features, and goals..." rows={6} data-testid="input-request-description" />
+                    <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+                      <span>{errors.description ? <span className="text-destructive">{errors.description.message}</span> : <span>Recommended ≤ 500 chars</span>}</span>
+                      <span>{descriptionCount}/700</span>
+                    </div>
                   </div>
+
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="category">Category</Label>
-                      <Select name="category">
-                        <SelectTrigger data-testid="select-request-category">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PROJECT_CATEGORIES.filter(c => c !== "All").map((cat) => (
-                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Controller name="category" control={control} render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger data-testid="select-request-category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PROJECT_CATEGORIES.filter(c => c !== "All").map((cat) => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )} />
                     </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="budget">Budget Range</Label>
-                      <Select name="budget">
-                        <SelectTrigger data-testid="select-request-budget">
-                          <SelectValue placeholder="Select budget" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="under-1k">Under $1,000</SelectItem>
-                          <SelectItem value="1k-5k">$1,000 - $5,000</SelectItem>
-                          <SelectItem value="5k-10k">$5,000 - $10,000</SelectItem>
-                          <SelectItem value="10k-25k">$10,000 - $25,000</SelectItem>
-                          <SelectItem value="25k+">$25,000+</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Controller name="budget" control={control} render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger data-testid="select-request-budget">
+                            <SelectValue placeholder="Select budget" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="under-1k">Under $1,000</SelectItem>
+                            <SelectItem value="1k-5k">$1,000 - $5,000</SelectItem>
+                            <SelectItem value="5k-10k">$5,000 - $10,000</SelectItem>
+                            <SelectItem value="10k-25k">$10,000 - $25,000</SelectItem>
+                            <SelectItem value="25k+">$25,000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )} />
                     </div>
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="timeline">Timeline</Label>
-                    <Select name="timeline">
-                      <SelectTrigger data-testid="select-request-timeline">
-                        <SelectValue placeholder="Select timeline" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="asap">ASAP</SelectItem>
-                        <SelectItem value="1-2-weeks">1-2 weeks</SelectItem>
-                        <SelectItem value="1-month">1 month</SelectItem>
-                        <SelectItem value="2-3-months">2-3 months</SelectItem>
-                        <SelectItem value="flexible">Flexible</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller name="timeline" control={control} render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger data-testid="select-request-timeline">
+                          <SelectValue placeholder="Select timeline" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="asap">ASAP</SelectItem>
+                          <SelectItem value="1-2-weeks">1-2 weeks</SelectItem>
+                          <SelectItem value="1-month">1 month</SelectItem>
+                          <SelectItem value="2-3-months">2-3 months</SelectItem>
+                          <SelectItem value="flexible">Flexible</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )} />
                   </div>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={createRequestMutation.isPending}
-                    data-testid="button-submit-request"
-                  >
+
+                  <Button type="submit" className="w-full" disabled={createRequestMutation.isPending} data-testid="button-submit-request">
                     {createRequestMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -312,7 +340,7 @@ export default function ClientDashboard() {
                   <ScrollArea className="h-[400px]">
                     <div className="space-y-4">
                       {requests.map((req) => (
-                        <Card key={req.id} className="p-4" data-testid={`my-request-${req.id}`}>
+                        <Card key={req.id} className="p-4 cursor-pointer" data-testid={`my-request-${req.id}`} onClick={() => { setSelectedRequest(req); setRequestDialogOpen(true); }}>
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -347,6 +375,60 @@ export default function ClientDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{selectedRequest?.title}</DialogTitle>
+                <DialogDescription>
+                  {selectedRequest?.category} • {selectedRequest?.budget || "No budget specified"}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="-mx-4 no-scrollbar max-h-[50vh] overflow-y-auto px-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
+                    <p className="mt-1 text-sm whitespace-pre-wrap">{selectedRequest?.description}</p>
+                  </div>
+              </div>
+
+              <DialogFooter className="grid grid-cols-3 gap-6 text-sm">
+                <div className="text-muted-foreground">
+                  <div className="font-medium">Timeline</div>
+                  <div>{selectedRequest?.timeline || "Not specified"}</div>
+                </div>
+
+                <div className="text-muted-foreground">
+                  <div className="font-medium">Submitted</div>
+                  <div>
+                    {selectedRequest
+                      ? new Date(selectedRequest.createdAt!).toLocaleString([], {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                      : "-"}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="font-medium">Status</div>
+                  <div className="mt-1 inline-flex items-center gap-2 justify-end">
+                    <span
+                      className={`${getStatusColor(
+                        selectedRequest?.status || ""
+                      )} h-2 w-2 rounded-full`}
+                    />
+                    <span className="capitalize">
+                      {selectedRequest?.status?.replace("_", " ")}
+                    </span>
+                  </div>
+                </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <TabsContent value="profile">
             <Card>
