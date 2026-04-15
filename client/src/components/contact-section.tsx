@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, MapPin, Clock, Send, CheckCircle, Loader2 } from "lucide-react";
-import { SiLinkedin, SiGithub, SiX } from "react-icons/si";
+import { FaLinkedinIn, FaGithub, FaTwitter  } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -33,19 +33,19 @@ const contactInfo = [
 
 const socialLinks = [
   {
-    icon: SiLinkedin,
+    icon: FaLinkedinIn,
     label: "LinkedIn",
     href: "https://linkedin.com/company/krpl-tech",
     testId: "link-linkedin",
   },
   {
-    icon: SiGithub,
+    icon: FaGithub,
     label: "GitHub",
     href: "https://github.com/krpl-tech",
     testId: "link-github",
   },
   {
-    icon: SiX,
+    icon: FaTwitter,
     label: "Twitter",
     href: "https://twitter.com/krpltech",
     testId: "link-twitter",
